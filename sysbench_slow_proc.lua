@@ -8,8 +8,7 @@ end
 
 function foo(thread_id) 
    local file
-
-   file = io.open('/root/david/'..thread_id..'/file', "r")
+   file = io.open(thread_id..'/file', "r")
    io.input(file)
    while true do
       local line = io.read()
@@ -25,16 +24,29 @@ function mydb_connect()
 end
 
 function event(thread_id)
-    local i=0
+   local i=0
+   if thread_id == num_threads - 1 then
+	local qfile = io.popen('ls -1 0/out 2> /dev/null')
+        for filename in qfile:lines() do
+            i=i+1
+        end
+	if i==0 then 
+	        os.execute('./sysbench_slow_proc -f mydumper1-slow_60s.log -t ' .. num_threads - 1 );
+	else
+		os.execute('sleep 5');
+	end
+   else
+
     while i==0 do
-        local pfile = io.popen('ls -1 /root/david/'..thread_id..'/file')
+	os.execute('sleep 0.1');
+        local pfile = io.popen('ls -1 '..thread_id..'/file 2> /dev/null')
         for filename in pfile:lines() do
             i=i+1
         end
         pfile:close()
     end
     local status,err = pcall(foo,thread_id)
-    os.execute('rm -f /root/david/'..thread_id..'/file')
+    os.execute('rm -f '..thread_id..'/file')
     if not status then
         db_disconnect()
         os.execute('sleep 1')
@@ -44,6 +56,7 @@ function event(thread_id)
             os.execute('sleep 0.5');
        end 
     end
+  end
 end
 
 
