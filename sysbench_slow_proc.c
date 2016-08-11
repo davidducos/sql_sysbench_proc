@@ -94,6 +94,7 @@ void print_thread(struct threads *t) {
 gint compare_threads(gconstpointer a, gconstpointer b){
         const struct threads *ab = a;
         const struct threads *bb = b;
+//	printf("comparing: %s with %s",ab->thread_id, bb->thread_id);
         if (ab->thread_id == bb->thread_id)
                 return 0;
 	if (ab->thread_id)
@@ -206,22 +207,23 @@ void read_file_process(){
 		line++;
                 if (data != NULL && data->str != NULL){
 			if (data->str[0]== '#'){
-				if (strlen(data->str)!=0){
-				        struct threads *t=g_new0(struct threads,1);
-					t->thread_id=thread_id;
-					GSList *t2=g_slist_find_custom(thread_list,t, (GCompareFunc)compare_threads);
-        				if (t2){
-						((struct threads*)(t2->data))->end_line=line;
-						g_free(t);
-					}else{
-						t->end_line=line;
-						t->start_line=line;
-						thread_list = g_slist_append (thread_list,t);
-					}
-        	                }
+			        struct threads *t=g_new0(struct threads,1);
+				t->thread_id=thread_id;
+				GSList *t2=g_slist_find_custom(thread_list,t, (GCompareFunc)compare_threads);
+       				if (t2){
+					((struct threads*)(t2->data))->end_line=line;
+					g_free(t);
+				}else{
+					t->end_line=line;
+					t->start_line=line;
+					thread_list = g_slist_append (thread_list,t);
+				}
 				if (!g_ascii_strncasecmp("# Thread_id:",data->str,12)){
 					gchar ** threadline=g_strsplit(data->str, " ", 4);
 	                                thread_id=g_strdup(threadline[2]);
+					char *pos;
+					if ((pos=strchr(thread_id, '\n')) != NULL)
+					    *pos = '\0';
 					g_strfreev(threadline);
 				}
                         }
@@ -304,11 +306,14 @@ void read_file_process(){
 					g_strfreev(threadline);
 
 					struct threads *t=g_new0(struct threads,1);
-                                        t->thread_id=thread_id;
+                                        t->thread_id=g_strdup(thread_id);
                                         GSList *t2=g_slist_find_custom(thread_list,t, (GCompareFunc)compare_threads);
 					g_free(t);
-                                        thread_instance= (struct threads*)(t2->data);
-
+					if (t2 != NULL )
+                                        	thread_instance= (struct threads*)(t2->data);
+					else{
+						printf("\nId: mm %s -- %s -- %s",t->thread_id,thread_id,data->str);
+					}
                                         struct mapping *m=g_new0(struct mapping,1);
                                         m->thread_id=thread_id;
                                         GSList *t5=g_slist_find_custom(mapping_list, m, (GCompareFunc)compare_thread_id);
